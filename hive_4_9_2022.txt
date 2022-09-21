@@ -1,0 +1,198 @@
+
+*********************************************************************
+create database hive_class_b1;
+use hive_class_b1;
+
+#Creation of Internal tables
+create table department_data                                                                                                            
+    > (                                                                                                                                       
+    > dept_id int,                                                                                                                            
+    > dept_name string,                                                                                                                       
+    > manager_id int,                                                                                                                         
+    > salary int)                                                                                                                             
+    > row format delimited                                                                                                                    
+    > fields terminated by ','; 
+    
+describe department_data;
+
+describe formatted department_data;
+
+
+show databases;
+
+hadoop fs -ls /user/hive/
+
+hadoop fs -ls /user/hive/warehouse
+
+hadoop fs -ls /user/hive/warehouse/hive_class_b1.db/department_data
+
+hadoop fs -mkdir /tmp/data
+
+hadoop fs -ls /tmp/data/
+
+cd /tmp/data
+
+ls
+
+(gives the depart_data.csv)
+
+
+ls -ltr
+
+pwd
+
+ls /tmp
+
+
+#To load data from Local
+load data local inpath 'file:///tmp/data/depart_data.csv' into table department_data;
+
+
+select * from department_data;
+
+select count(*) from department_data;
+
+
+#To copy data from home directory to tmp file
+cp /home/cloudera/steph/data/depart_data.csv  /tmp/data/
+
+
+
+#HDFS location of the data
+hadoop fs -ls /user/hive/warehouse/hive_class_b1.db/department_data
+
+#To display the column name
+set hive.cli.print.header = True;
+
+#To make new directory in the hdfs :
+hadoop fs -mkdir /tmp/hive/data_class_2
+
+#To copy the file available in the local system to the HDFS
+hadoop fs -put /tmp/data/depart_data.csv  /tmp/hive/data_class_2
+
+hadoop fs -ls /tmp/hive/data_class_2;
+
+create table department_data_from_hdfs 
+(
+dept_id int,
+dept_name string,
+manager_id int,
+salary int
+)
+row format delimited 
+fields terminated by ',';
+
+#No need to write local keyword while loading data from the HDFS and no need to give the path upto csv file's name 
+#To load data from HDFS
+load path inpath '/tmp/hive/data_class_2' into table department_data_from_hdfs;
+
+
+#Creation of External tables
+create external table department_data_from_external	
+(
+dept_id int,
+dept_name string,
+manager_id int,
+salary int
+)
+row format delimited 
+fields terminated by ','
+location '/tmp/hive/data_class_2';
+
+
+#Load data again becuase the data was moved to the warehouse while we executed the command of the external table
+hadoop fs -put /tmp/data/depart_data.csv  /tmp/hive/data_class_2
+
+#In external table the hive engine will map the data from the source location and then they wikk display it on the terminal. There is no need to load data, we are simply pointing the schema of the table to the data which is stored in the HDFS
+#In internal (managed table)  the data have to be loaded and the data along with the meta-data will be stored in the warehouse. The data will be moved from the source location to the warehouse in this creation of the internal table.
+
+drop table department_data;
+drop table department_data_from_hdfs;
+drop table department_data_from_external;
+
+#After the drop operation the data from the meta and data will be deleted and the data in the external file will be maintained, only the schema is deleted from the source location.
+
+pwd 
+
+vim array_data
+
+mv array_data array_data.csv
+
+ls
+
+use hive_class_b1;
+
+#For creating table to handle array data types --- Internal (Mapped) table
+create table employee (id int, name string, skills array<string>)
+row format delimited 
+fields terminated by ','
+collection items terminated by ':';
+
+#Load data 
+load data infile 'file:///tmp/data/data_array.csv' into table employee;
+
+set hive.cli.print.header = True;
+
+#To show the primary skill of all employee or Get element by index in Hive array datatype
+select id, name, skill[0] as primary_skill from employee;
+
+select                                                                                                                                  
+    > id,                                                                                                                                     
+    > name,                                                                                                                                   
+    > size(skills) as size_of_each_array,                                                                                                     
+    > array_contains(skills,"HADOOP") as knows_hadoop,                                                                                        
+    > sort_array(skills) as sorted_array                                                                                                                     
+    > from employee; 
+
+
+vim map_data.csv
+
+cd /tmp/map_data.csv
+
+# table for map data
+
+create table employee_map_data                                                                                                          
+    > (                                                                                                                                       
+    > id int,                                                                                                                                 
+    > name string,                                                                                                                            
+    > details map<string,string>                                                                                                              
+    > )                                                                                                                                       
+    > row format delimited                                                                                                                    
+    > fields terminated by ','                                                                                                                
+    > collection items terminated by '|'                                                                                                      
+    > map keys terminated by ':';
+    
+ load data local inpath 'file:///tmp/hive_class/map_data.csv' into table employee_map_data;
+ 
+ load data local inpath 'file:///tmp/data/map_data.csv' into table employee_map_data;
+ 
+ set hive.cli.print.header = True;
+ 
+ select * from employee_map_data;
+ 
+  select                                                                                                                                  
+    > id,                                                                                                                                     
+    > name,                                                                                                                                   
+    > details["gender"] as employee_gender                                                                                                    
+    > from employee_map_data; 
+
+
+# map functions
+ select                                                                                                                                  
+    > id,                                                                                                                                     
+    > name,                                                                                                                                   
+    > details,                                                                                                                                
+    > size(details) as size_of_each_map,                                                                                                      
+    > map_keys(details) as distinct_map_keys,                                                                                                 
+    > map_values(details) as distinct_map_values                                                                                              
+    > from employee_map_data; 
+
+
+
+
+
+
+
+
+
+
